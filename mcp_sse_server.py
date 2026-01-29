@@ -537,43 +537,97 @@ async def health_check():
         "service": "wordpress-mcp-sse-server"
     }
 
-@app.get("/sse")
-async def sse_endpoint(request: Request):
-    """SSE endpoint for ChatGPT connection"""
-    
-    async def event_generator():
-        """Generate SSE events"""
-        try:
-            # Send endpoint URL
-            endpoint_url = str(request.url).replace("/sse", "/mcp")
+@app.options("/sse")
+async def sse_options():
+    """OPTIONS endpoint for CORS preflight"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+async def sse_stream_generator(request: Request):
+    """Generate SSE events for MCP protocol"""
+    try:
+        # Get the MCP endpoint URL
+        scheme = request.url.scheme
+        host = request.headers.get("host", request.url.netloc)
+        endpoint_url = f"{scheme}://{host}/mcp"
+        
+        # Send endpoint URL as first event
+        endpoint_data = json.dumps({"url": endpoint_url})
+        yield {
+            "event": "endpoint",
+            "data": endpoint_data
+        }
+        
+        logger.info(f"SSE connection established")
+        logger.info(f"MCP endpoint URL: {endpoint_url}")
+        
+        # Keep connection alive
+        while True:
+            if await request.is_disconnected():
+                logger.info("Client disconnected from SSE")
+                break
+            
+            # Send ping every 30 seconds to keep connection alive
+            await asyncio.sleep(30)
             yield {
-                "event": "endpoint",
-                "data": json.dumps({"url": endpoint_url})
+                "event": "ping",
+                "data": ""
             }
             
-            logger.info(f"SSE connection established, endpoint: {endpoint_url}")
-            
-            # Send heartbeat every 15 seconds
-            while True:
-                if await request.is_disconnected():
-                    logger.info("SSE client disconnected")
-                    break
-                
-                yield {
-                    "event": "heartbeat",
-                    "data": json.dumps({"status": "alive"})
-                }
-                
-                await asyncio.sleep(15)
-                
-        except Exception as e:
-            logger.error(f"SSE error: {str(e)}")
-    
+    except asyncio.CancelledError:
+        logger.info("SSE connection cancelled")
+        raise
+    except Exception as e:
+        logger.error(f"SSE error: {e}")
+        raise
+
+@app.get("/sse")
+async def sse_endpoint_get(request: Request):
+    """SSE endpoint for GET requests"""
     return EventSourceResponse(
-        event_generator(),
+        sse_stream_generator(request),
         headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no"
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Content-Type": "text/event-stream",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
+
+@app.post("/sse")
+async def sse_endpoint_post(request: Request):
+    """SSE endpoint for POST requests (ChatGPT uses this)"""
+    return EventSourceResponse(
+        sse_stream_generator(request),
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
+
+@app.options("/mcp")
+async def mcp_options():
+    """OPTIONS endpoint for CORS preflight"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         }
     )
 
@@ -647,6 +701,12 @@ async def mcp_endpoint(request: Request):
                 }
             }
             return JSONResponse(response)
+        
+        # Handle notifications (no response needed)
+        elif method.startswith("notifications/"):
+            logger.info(f"Received notification: {method}")
+            # Notifications don't require a response according to JSON-RPC 2.0
+            return JSONResponse({}, status_code=200)
         
         else:
             # Unknown method
