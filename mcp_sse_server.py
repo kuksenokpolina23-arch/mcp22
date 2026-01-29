@@ -681,6 +681,30 @@ async def mcp_endpoint(request: Request):
             }
             return JSONResponse(response)
         
+        # Handle resources/list
+        elif method == "resources/list":
+            # Return empty resources list (we don't have resources, only tools)
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "resources": []
+                }
+            }
+            return JSONResponse(response)
+        
+        # Handle prompts/list
+        elif method == "prompts/list":
+            # Return empty prompts list (we don't have prompts)
+            response = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "prompts": []
+                }
+            }
+            return JSONResponse(response)
+        
         # Handle tools/call
         elif method == "tools/call":
             tool_name = params.get("name")
