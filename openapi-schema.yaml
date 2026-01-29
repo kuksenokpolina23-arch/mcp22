@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: WordPress MCP API
+  description: API для управления постами WordPress через ChatGPT
+  version: 1.0.0
+servers:
+  - url: https://soup-graphic-lawyer-cigarettes.trycloudflare.com
+    description: WordPress MCP Server
+
+paths:
+  /mcp:
+    post:
+      operationId: callWordPressTool
+      summary: Вызов инструмента WordPress
+      description: Выполняет операции с постами WordPress (создание, обновление, получение, удаление)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc:
+                  type: string
+                  default: "2.0"
+                method:
+                  type: string
+                  enum: ["tools/call"]
+                params:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      enum:
+                        - wordpress_create_post
+                        - wordpress_update_post
+                        - wordpress_get_post
+                        - wordpress_delete_post
+                    arguments:
+                      type: object
+                id:
+                  type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    CreatePostArgs:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          description: Заголовок поста
+        content:
+          type: string
+          description: Содержимое поста (HTML)
+        excerpt:
+          type: string
+          description: Краткое описание
+        status:
+          type: string
+          enum: [publish, draft, pending]
+          default: publish
+          description: Статус публикации
+    
+    UpdatePostArgs:
+      type: object
+      required:
+        - post_id
+      properties:
+        post_id:
+          type: integer
+          description: ID поста для обновления
+        title:
+          type: string
+          description: Новый заголовок
+        content:
+          type: string
+          description: Новое содержимое (HTML)
+        excerpt:
+          type: string
+          description: Новое краткое описание
+        status:
+          type: string
+          enum: [publish, draft, pending, private]
+          description: Новый статус
+    
+    GetPostArgs:
+      type: object
+      required:
+        - post_id
+      properties:
+        post_id:
+          type: integer
+          description: ID поста для получения
+    
+    DeletePostArgs:
+      type: object
+      required:
+        - post_id
+      properties:
+        post_id:
+          type: integer
+          description: ID поста для удаления

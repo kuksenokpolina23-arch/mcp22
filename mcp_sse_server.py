@@ -756,6 +756,101 @@ async def mcp_endpoint(request: Request):
         }, status_code=500)
 
 # ============================================
+# SIMPLIFIED REST ENDPOINTS FOR CHATGPT ACTIONS
+# ============================================
+
+@app.post("/wordpress/create")
+async def create_post_rest(request: Request):
+    """Simplified endpoint for creating WordPress posts (ChatGPT Actions)"""
+    try:
+        body = await request.json()
+        title = body.get("title")
+        content = body.get("content")
+        excerpt = body.get("excerpt", "")
+        status = body.get("status", "publish")
+        
+        if not title or not content:
+            return JSONResponse(
+                {"error": "title and content are required"},
+                status_code=400
+            )
+        
+        # Call WordPress API directly
+        result = await wp_client.create_post(title, content, excerpt, status)
+        
+        return JSONResponse({
+            "success": result.get("success", False),
+            "message": result.get("message", ""),
+            "post_id": result.get("post_id"),
+            "post_url": result.get("url", "")
+        })
+        
+    except Exception as e:
+        logger.error(f"REST create error: {str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/wordpress/update")
+async def update_post_rest(request: Request):
+    """Simplified endpoint for updating WordPress posts"""
+    try:
+        body = await request.json()
+        post_id = body.get("post_id")
+        
+        if not post_id:
+            return JSONResponse(
+                {"error": "post_id is required"},
+                status_code=400
+            )
+        
+        result = await wp_client.update_post(
+            post_id,
+            title=body.get("title"),
+            content=body.get("content"),
+            excerpt=body.get("excerpt"),
+            status=body.get("status")
+        )
+        
+        return JSONResponse({
+            "success": result.get("success", False),
+            "message": result.get("message", ""),
+            "post_url": result.get("url", "")
+        })
+        
+    except Exception as e:
+        logger.error(f"REST update error: {str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/wordpress/get/{post_id}")
+async def get_post_rest(post_id: int):
+    """Simplified endpoint for getting WordPress post"""
+    try:
+        result = await wp_client.get_post(post_id)
+        
+        return JSONResponse({
+            "success": result.get("success", False),
+            "post": result.get("post", {})
+        })
+        
+    except Exception as e:
+        logger.error(f"REST get error: {str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.delete("/wordpress/delete/{post_id}")
+async def delete_post_rest(post_id: int):
+    """Simplified endpoint for deleting WordPress post"""
+    try:
+        result = await wp_client.delete_post(post_id)
+        
+        return JSONResponse({
+            "success": result.get("success", False),
+            "message": result.get("message", "")
+        })
+        
+    except Exception as e:
+        logger.error(f"REST delete error: {str(e)}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+# ============================================
 # MAIN
 # ============================================
 
