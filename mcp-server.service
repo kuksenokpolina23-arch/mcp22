@@ -1,0 +1,16 @@
+[Unit]
+Description=MCP SSE Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/MCP22
+ExecStart=/usr/bin/python3 /MCP22/mcp_sse_server.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/MCP22/mcp_server.log
+StandardError=append:/MCP22/mcp_server.log
+
+[Install]
+WantedBy=multi-user.target

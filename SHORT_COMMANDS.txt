@@ -1,0 +1,19 @@
+Короткие команды для ввода вручную в терминале сервера:
+================================================================
+
+1) cd /root
+2) git clone https://github.com/kuksenokpolina23-arch/mcp22.git
+3) cd mcp22
+4) apt update
+5) apt install -y python3-pip
+6) pip3 install -r requirements.txt
+7) python3 mcp_sse_server.py &
+8) ps aux | grep mcp
+
+================================================================
+ИЛИ ВСЁ В ОДНОЙ СТРОКЕ (но длинной):
+================================================================
+
+cd /root && git clone https://github.com/kuksenokpolina23-arch/mcp22.git && cd mcp22 && apt update && apt install -y python3-pip && pip3 install -r requirements.txt && python3 mcp_sse_server.py > server.log 2>&1 & sleep 2 && ps aux | grep mcp
+
+================================================================

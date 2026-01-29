@@ -1,0 +1,9 @@
+Host mcp-server
+    HostName 77.73.232.84
+    User root
+    Port 22
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# Скопируй этот файл в: C:\Users\User\.ssh\config
+# Или создай файл config в папке .ssh если его нет
