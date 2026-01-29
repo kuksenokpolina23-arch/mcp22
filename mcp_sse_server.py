@@ -7,8 +7,10 @@ Allows ChatGPT to create, update, get, and delete WordPress posts via MCP protoc
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 
 import httpx
 import uvicorn
@@ -16,17 +18,26 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
+from dotenv import load_dotenv
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 
 # ============================================
-# CONFIGURATION - EDIT THESE VALUES
+# LOAD ENVIRONMENT VARIABLES
 # ============================================
 
-WORDPRESS_URL = "https://p-kuksenok.ru"
-WORDPRESS_USERNAME = "Admin"
-WORDPRESS_PASSWORD = "qW2b 9NbG 733K oEWP nV8v O5vH"
+# Load .env file from the same directory as this script
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# ============================================
+# CONFIGURATION - LOADED FROM .env FILE
+# ============================================
+
+WORDPRESS_URL = os.getenv("WORDPRESS_URL", "https://your-wordpress-site.com")
+WORDPRESS_USERNAME = os.getenv("WORDPRESS_USERNAME", "your-username")
+WORDPRESS_PASSWORD = os.getenv("WORDPRESS_PASSWORD", "your-password")
 
 # ============================================
 # LOGGING CONFIGURATION
